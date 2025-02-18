@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tasks</title>
+  <style>
+    #taskList {
+      border: 2px dashed #ccc;
+      padding: 16px;
+      display: inline-block;
+      width: 1600px;
+      height: 800px;
+    }
+    .task {
+      display: inline-block;
+      background-color: #e6e6e6;
+      padding: 8px;
+      margin: 8px;
+      cursor: move;
+      box-sizing: border-box;
+      word-wrap: break-word;
+      width: 300px;
+      overflow: auto;
+      vertical-align: top;
+    }
+  </style>
+</head>
+<body>
+<div id="taskList">
+  <div class="task" contenteditable="true">Task 0</div>
+  <div class="task" contenteditable="true">Task 1</div>
+  <div class="task" contenteditable="true">Task 2</div>
+  <div class="task" contenteditable="true">Task 3</div>
+  <div class="task" contenteditable="true">Task 4</div>
+  <div class="task" contenteditable="true">Task 5</div>
+  <div class="task" contenteditable="true">Task 6</div>
+  <div class="task" contenteditable="true">Task 7</div>
+  <div class="task" contenteditable="true">Task 8</div>
+  <div class="task" contenteditable="true">Task 9</div>
+  <div class="task" contenteditable="true">Task 10</div>
+  <div class="task" contenteditable="true">Task 11</div>
+  <div class="task" contenteditable="true">Task 12</div>
+  <div class="task" contenteditable="true">Task 13</div>
+  <div class="task" contenteditable="true">Task 14</div>
+  <div class="task" contenteditable="true">Task 15</div>
+</div>
+
+<!-- Firebase SDK -->
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
+<script>
+  // Initialize Firebase
+  const firebaseConfig = {
+    apiKey: "AIzaSyDZh6ySbR8p8FIRddE4yL_2Zlt8A6_VNz4",
+    authDomain: "taskapp-94b89.firebaseapp.com",
+    databaseURL: "https://taskapp-94b89-default-rtdb.firebaseio.com",
+    projectId: "taskapp-94b89",
+    storageBucket: "taskapp-94b89.appspot.com",
+    messagingSenderId: "449085008718",
+    appId: "1:449085008718:web:272708eeada1f429158c1f"
+  };
+
+  const app = firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+  const tasksRef = database.ref('tasks');
+
+  const tasks = document.querySelectorAll('.task');
+  
+  // Save tasks to Firebase
+  function saveTasksAndPositions() {
+    const savedData = Array.from(tasks).map(task => ({
+      text: task.innerText,
+      x: task.dataset.x || '0',
+      y: task.dataset.y || '0'
+    }));
+    tasksRef.set(savedData);
+  }
+
+  // Load tasks from Firebase
+  function loadTasksAndPositions() {
+    tasksRef.on('value', (snapshot) => {
+      const savedData = snapshot.val();
+      if (savedData && savedData.length > 0) {
+        tasks.forEach((task, index) => {
+          const { text, x, y } = savedData[index];
+          task.innerText = text;
+          task.style.transform = `translate(${x}px, ${y}px)`;
+          task.dataset.x = x;
+          task.dataset.y = y;
+        });
+      }
+    });
+  }
+
+  // Add event listeners
+  tasks.forEach(task => {
+    task.addEventListener('input', saveTasksAndPositions);
+  });
+
+  // Load tasks when page loads
+  window.addEventListener('load', loadTasksAndPositions);
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+<script>
+  interact('.task').draggable({
+    inertia: true,
+    modifiers: [
+      interact.modifiers.restrictRect({
+        restriction: 'parent',
+        endOnly: true
+      })
+    ],
+    autoScroll: true,
+    listeners: {
+      start(event) {
+        event.target.classList.add('dragging');
+        event.interactable.draggable(false);
+      },
+      move(event) {
+        const { dx, dy } = event;
+        const { x, y } = event.target.dataset;
+        const newX = (parseFloat(x) || 0) + dx;
+        const newY = (parseFloat(y) || 0) + dy;
+        event.target.style.transform = `translate(${newX}px, ${newY}px)`;
+        event.target.dataset.x = newX;
+        event.target.dataset.y = newY;
+      },
+      end(event) {
+        event.target.classList.remove('dragging');
+        event.interactable.draggable(true);
+        const { x, y } = event.target.dataset;
+        event.target.style.transform = `translate(${x}px, ${y}px)`;
+        saveTasksAndPositions();
+      }
+    }
+  });
+</script>
+</body>
+</html>
