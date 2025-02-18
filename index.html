@@ -66,7 +66,8 @@
   const tasksRef = database.ref('tasks');
 
   const tasks = document.querySelectorAll('.task');
-  
+  let activeTask = null; // Track the currently edited task
+
   // Save tasks to Firebase
   function saveTasksAndPositions() {
     const savedData = Array.from(tasks).map(task => ({
@@ -83,18 +84,45 @@
       const savedData = snapshot.val();
       if (savedData && savedData.length > 0) {
         tasks.forEach((task, index) => {
+          if (task === activeTask) return; // Don't overwrite the active task
+
           const { text, x, y } = savedData[index];
-          task.innerText = text;
+
+          // Preserve cursor position
+          const selection = window.getSelection();
+          const range = document.createRange();
+          const cursorPosition = selection.focusOffset;
+
+          if (task.textContent !== text) {
+            task.textContent = text;
+          }
+
           task.style.transform = `translate(${x}px, ${y}px)`;
           task.dataset.x = x;
           task.dataset.y = y;
+
+          // Restore cursor position if the task was not active
+          if (document.activeElement === task) {
+            range.setStart(task.childNodes[0] || task, Math.min(cursorPosition, text.length));
+            range.collapse(true);
+            selection.removeAllRanges();
+            selection.addRange(range);
+          }
         });
       }
     });
   }
 
-  // Add event listeners
+  // Add event listeners to track active task
   tasks.forEach(task => {
+    task.addEventListener('focus', () => {
+      activeTask = task;
+    });
+
+    task.addEventListener('blur', () => {
+      activeTask = null;
+    });
+
     task.addEventListener('input', saveTasksAndPositions);
   });
 
