@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Tasks with Calendar</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+    }
+    #taskList {
+      border: 2px solid #ccc;
+      padding: 16px;
+      display: inline-block;
+      width: 1600px;
+      height: 400px;
+      margin-bottom: 20px;
+      position: relative;
+    }
+    .task {
+      border: 2px solid #ccc;
+      display: block;
+      background-color: #e6e6e6;
+      padding: 8px;
+      margin: 8px;
+      cursor: move;
+      box-sizing: border-box;
+      width: 300px;
+      overflow: visible;
+      position: absolute;
+      transition: height 0.3s;
+    }
+    .task-content {
+      word-wrap: break-word;
+      min-height: 20px;
+      outline: none;
+      padding-right: 25px; /* Make space for the button */
+    }
+    .task.minimized .task-content {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      height: 24px;
+    }
+    .task-toggle {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      background-color: #ccc;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
+    }
+    .task-toggle:hover {
+      background-color: #bbb;
+    }
+    #calendar {
+      margin-top: 30px;
+      height: 850px;
+      max-width: 1200px;
+    }
+    .fc-event {
+      cursor: pointer;
+    }
+    .fc .fc-timegrid-col.fc-day-sat,
+    .fc .fc-timegrid-col.fc-day-sun,
+    .fc-col-header-cell.fc-day-sat,
+    .fc-col-header-cell.fc-day-sun {
+      width: 15px !important;
+      max-width: 15px !important;
+      min-width: 15px !important;
+      background-color: #f0f0f0 !important;
+    }
+    .fc-day-sat .fc-timegrid-col-frame *, 
+    .fc-day-sun .fc-timegrid-col-frame * {
+      visibility: hidden;
+    }
+    .fc-col-header-cell.fc-day-sat .fc-col-header-cell-cushion, 
+    .fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion {
+      font-size: 0.6em !important;
+      color: #aaa !important;
+    }
+  </style>
+</head>
+<body>
+<div id="taskList">
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 0</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 1</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 2</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 3</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 4</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 5</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 6</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 7</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 8</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 9</div>
+    <button class="task-toggle">−</button>
+  </div>
+</div>
+
+<div id="calendar"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
+
+<script>
+  const tasks = document.querySelectorAll('.task');
+  tasks.forEach(task => {
+    const taskContent = task.querySelector('.task-content');
+    const toggleButton = task.querySelector('.task-toggle');
+    
+    // Add event listener to the editable content area
+    taskContent.addEventListener('input', saveTasksAndPositions);
+    
+    // Add click event to the toggle button
+    toggleButton.addEventListener('click', function(e) {
+      e.stopPropagation();
+      task.classList.toggle('minimized');
+      this.textContent = task.classList.contains('minimized') ? '+' : '−';
+      saveTasksAndPositions();
+    });
+  });
+  
+  function saveTasksAndPositions() {
+    const savedData = Array.from(tasks).map(task => {
+      const taskContent = task.querySelector('.task-content');
+      return {
+        text: taskContent.innerText,
+        x: task.dataset.x || '0',
+        y: task.dataset.y || '0',
+        minimized: task.classList.contains('minimized')
+      };
+    });
+    localStorage.setItem('taskData', JSON.stringify(savedData));
+  }
+  
+  window.addEventListener('load', function() {
+    // Initialize default positions if none are saved
+    let savedData = JSON.parse(localStorage.getItem('taskData'));
+    
+    if (!savedData || savedData.length === 0) {
+      // Set initial positions in a grid layout
+      savedData = Array.from(tasks).map((task, index) => {
+        const col = index % 5;
+        const row = Math.floor(index / 5);
+        const x = col * 320;
+        const y = row * 100;
+        
+        // Position the task at grid coordinates
+        task.style.transform = `translate(${x}px, ${y}px)`;
+        task.dataset.x = x;
+        task.dataset.y = y;
+        
+        const taskContent = task.querySelector('.task-content');
+        
+        return {
+          text: taskContent.innerText,
+          x: x,
+          y: y,
+          minimized: false
+        };
+      });
+      
+      localStorage.setItem('taskData', JSON.stringify(savedData));
+    }
+    
+    loadTasksAndPositions();
+  });
+  
+  function loadTasksAndPositions() {
+    const savedData = JSON.parse(localStorage.getItem('taskData'));
+    if (savedData && savedData.length > 0){
+      tasks.forEach((task, index) => {
+        const { text, x, y, minimized } = savedData[index];
+        
+        // Set the text content in the editable div
+        const taskContent = task.querySelector('.task-content');
+        taskContent.innerText = text;
+        
+        // Set position
+        task.style.transform = `translate(${x}px, ${y}px)`;
+        task.dataset.x = x;
+        task.dataset.y = y;
+        
+        // Set minimized state if applicable
+        const button = task.querySelector('.task-toggle');
+        if (minimized) {
+          task.classList.add('minimized');
+          button.textContent = '+';
+        } else {
+          task.classList.remove('minimized');
+          button.textContent = '−';
+        }
+      });
+    }
+  }
+
+  interact('.task')
+    .draggable({
+      inertia: true,
+      modifiers: [
+        interact.modifiers.restrictRect({
+          restriction: 'parent',
+          endOnly: true
+        })
+      ],
+      autoScroll: true,
+      listeners: {
+        start(event) {
+          // Only prevent dragging if the click was directly on the toggle button
+          if (event.originalEvent && event.originalEvent.target && 
+              event.originalEvent.target.classList.contains('task-toggle')) {
+            event.interaction.stop();
+            return;
+          }
+          event.target.classList.add('dragging');
+          event.interactable.draggable(false);
+        },
+        move(event) {
+          const { dx, dy } = event;
+          const { x, y } = event.target.dataset;
+          const newX = (parseFloat(x) || 0) + dx;
+          const newY = (parseFloat(y) || 0) + dy;
+          event.target.style.transform = `translate(${newX}px, ${newY}px)`;
+          event.target.dataset.x = newX;
+          event.target.dataset.y = newY;
+        },
+        end(event) {
+          event.target.classList.remove('dragging');
+          event.interactable.draggable(true);
+          const { x, y } = event.target.dataset;
+          event.target.style.transform = `translate(${x}px, ${y}px)`;
+          saveTasksAndPositions();
+        }
+      }
+    });
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      headerToolbar: false,
+      initialView: 'customSevenDay',
+	views: {
+	  customSevenDay: {
+		type: 'timeGrid',
+		duration: { days: 7 },
+		buttonText: '7 day'
+	  }
+	},
+      dayHeaderFormat: { weekday: 'short', month: 'numeric', day: 'numeric' },
+      initialDate: new Date(),
+      slotMinTime: '08:00:00',
+      slotMaxTime: '18:00:00',
+      allDaySlot: false,
+      slotDuration: '00:30:00',
+      height: '509px',
+      nowIndicator: true,
+      businessHours: {
+        daysOfWeek: [1, 2, 3, 4, 5],
+        startTime: '08:00',
+        endTime: '18:00',
+      },
+      editable: true,
+      selectable: true,
+      eventColor: '#3788d8',
+      eventTimeFormat: {
+        hour: '2-digit',
+        minute: '2-digit',
+        meridiem: false,
+        hour12: false
+      },
+      
+      select: function(info) {
+        const title = prompt('Enter event title:');
+        if (title) {
+          calendar.addEvent({
+            title: title,
+            start: info.start,
+            end: info.end,
+            allDay: info.allDay
+          });
+          
+          saveEvents(calendar);
+        }
+        calendar.unselect();
+      },
+      
+      eventClick: function(info) {
+        if (confirm('Would you like to delete this event?')) {
+          info.event.remove();
+          
+          saveEvents(calendar);
+        }
+      },
+      
+      eventDrop: function() {
+        saveEvents(calendar);
+      },
+      
+      eventResize: function() {
+        saveEvents(calendar);
+      }
+    });
+    
+    function saveEvents(calendar) {
+      const events = calendar.getEvents().map(event => ({
+        title: event.title,
+        start: event.start ? event.start.toISOString() : null,
+        end: event.end ? event.end.toISOString() : null
+      }));
+      localStorage.setItem('calendarEvents', JSON.stringify(events));
+    }
+    
+    function loadEvents() {
+      const eventsJson = localStorage.getItem('calendarEvents');
+      if (eventsJson) {
+        const events = JSON.parse(eventsJson);
+        events.forEach(eventData => {
+          calendar.addEvent(eventData);
+        });
+      }
+    }
+    
+    calendar.render();
+    loadEvents();
+    
+    setTimeout(function() {
+      const weekendCols = document.querySelectorAll('.fc-day-sat, .fc-day-sun');
+      weekendCols.forEach(col => {
+        col.style.maxWidth = '15px';
+        col.style.width = '15px';
+        col.style.backgroundColor = '#f0f0f0';
+      });
+      
+      const observer = new MutationObserver(function(mutations) {
+        const weekendCols = document.querySelectorAll('.fc-day-sat, .fc-day-sun');
+        weekendCols.forEach(col => {
+          col.style.maxWidth = '15px';
+          col.style.width = '15px';
+          col.style.backgroundColor = '#f0f0f0';
+        });
+      });
+      
+      observer.observe(calendarEl, { childList: true, subtree: true });
+    }, 500);
+  });
+</script>
+</body>
+</html>
