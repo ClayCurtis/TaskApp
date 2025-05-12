@@ -1,359 +1,388 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	
-    <title>Math</title>
-<style>
-    :root {
-        --background-color: #f0f0f0;
-        --card-background: #ffffff;
-        --box-shadow-color: rgba(0, 0, 0, 0.1);
-        --neutral-background: #e9ecef;
-        --primary-color: #007bff;
-        --primary-hover-color: #0056b3;
-        --success-background: #28a745;
-        --success-text-color: #155724;
-        --error-background: #f8d7da;
-        --error-text-color: #721c24;
-        --help-text-color: #666666;
-        --stats-background: #f8f9fa;
-    }
+  <meta charset="UTF-8">
+  <title>Tasks</title>
+  <link href="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.css" rel="stylesheet">
+<link rel="icon" href="/favicon.ico">
+<link rel="shortcut icon" href="/favicon.ico" type="image/x-icon">
+  <style>
     body {
-        font-family: Arial, sans-serif;
-        margin: 0 auto;
-        padding: 20px;
-        background-color: var(--background-color);
-        display: flex;
-        justify-content: center;
+      font-family: Arial, sans-serif;
+      margin: 20px;
     }
-    .game-container {
-        background-color: var(--card-background);
-        padding: 20px;
-        border-radius: 8px;
-        box-shadow: 0 2px 4px var(--box-shadow-color);
-        display: flex;
-        max-width: 800px;
-        width: 100%;
-        gap: 20px;
+    #taskList {
+      border: 2px solid #ccc;
+      padding: 16px;
+      display: inline-block;
+      width: 1600px;
+      height: 400px;
+      margin-bottom: 20px;
+      position: relative;
     }
-    .game-content {
-        flex: 1;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        min-height: 400px; /* Added to maintain consistent height */
+    .task {
+      border: 2px solid #ccc;
+      display: block;
+      background-color: #e6e6e6;
+      padding: 8px;
+      margin: 8px;
+      cursor: move;
+      box-sizing: border-box;
+      width: 300px;
+      overflow: visible;
+      position: absolute;
+      transition: height 0.3s;
     }
-    .numbers-container {
-        display: flex;
-        gap: 10px;
-        margin-bottom: 20px;
-        min-height: 50px; /* Added to maintain consistent height */
+    .task-content {
+      word-wrap: break-word;
+      min-height: 20px;
+      outline: none;
+      padding-right: 25px; /* Make space for the button */
     }
-    .number-box {
-        width: 50px;
-        height: 50px;
-        background-color: var(--neutral-background);
-        border-radius: 8px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 24px;
-        font-weight: bold;
-        transition: opacity 0.2s ease;
+    .task.minimized .task-content {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      height: 24px;
     }
-    .number-box.inactive {
-        opacity: 0.4;
+    .task-toggle {
+      position: absolute;
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      background-color: #ccc;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10;
     }
-    .input-container {
-        margin-bottom: 20px;
-        display: flex;
-        align-items: center;
-        width: 100%; /* Added for consistent width */
+    .task-toggle:hover {
+      background-color: #bbb;
     }
-    input[type="text"] {
-        padding: 8px;
-        font-size: 16px;
-        width: 300px;
-        margin-right: 10px;
-        flex-grow: 1;
+    #calendar {
+      margin-top: 30px;
+      height: 850px;
+      max-width: 1200px;
     }
-    button {
-        padding: 8px 16px;
-        background-color: var(--primary-color);
-        color: white;
-        border: none;
-        border-radius: 4px;
-        cursor: pointer;
+    .fc-event {
+      cursor: pointer;
     }
-    button:hover {
-        background-color: var(--primary-hover-color);
+    .fc .fc-timegrid-col.fc-day-sat,
+    .fc .fc-timegrid-col.fc-day-sun,
+    .fc-col-header-cell.fc-day-sat,
+    .fc-col-header-cell.fc-day-sun {
+      width: 15px !important;
+      max-width: 15px !important;
+      min-width: 15px !important;
+      background-color: #f0f0f0 !important;
     }
-    button:disabled {
-        background-color: var(--neutral-background);
-        cursor: not-allowed;
+    .fc-day-sat .fc-timegrid-col-frame *, 
+    .fc-day-sun .fc-timegrid-col-frame * {
+      visibility: hidden;
     }
-    .progress-grid {
-        display: grid;
-        grid-template-columns: repeat(10, 1fr);
-        grid-template-rows: repeat(10, 1fr);
-        gap: 8px;
-        width: 380px;
+    .fc-col-header-cell.fc-day-sat .fc-col-header-cell-cushion, 
+    .fc-col-header-cell.fc-day-sun .fc-col-header-cell-cushion {
+      font-size: 0.6em !important;
+      color: #aaa !important;
     }
-    .number-cell {
-        aspect-ratio: 1;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        background-color: var(--neutral-background);
-        border-radius: 4px;
-        font-size: 14px;
-    }
-    .solved {
-        background-color: var(--success-background);
-        color: white;
-    }
-    #message {
-        min-height: 20px; /* Added to maintain consistent height */
-        margin: 10px 0;
-        padding: 10px;
-        border-radius: 4px;
-    }
-    .error {
-        background-color: var(--error-background);
-        color: var(--error-text-color);
-    }
-    .success {
-        background-color: var(--success-background);
-        color: var(--success-text-color);
-    }
-    #help-text {
-        font-size: 14px;
-        color: var(--help-text-color);
-        margin-bottom: 10px;
-        min-height: 20px; /* Added to maintain consistent height */
-    }
-    .stats {
-        margin-top: 20px;
-        padding: 10px;
-        background-color: var(--stats-background);
-        border-radius: 4px;
-        text-align: center;
-        width: 380px;
-    }
-	#start-container {
-        z-index: 1;
-        padding: 10px;
-	}
-    #timer {
-        font-size: 18px;
-        font-weight: bold;
-        padding: 10px;
-        color: var(--help-text-color);
-    }
-</style>
-
+  </style>
 </head>
 <body>
-    <div class="game-container">
-        <div class="game-content">          
-            <div class="numbers-container" id="numbers"></div>
-            
-            <div class="input-container">
-                <div id="help-text">
-                    Use +, -, *, /, ^ (exponent), ! (factorial), % (modulus), and ()
-                </div>
-            </div>            
-            <div class="input-container">
-                <input type="text" id="equation" placeholder="Enter your equation..." disabled>
-                <button onclick="checkEquation()" id="check-button" disabled>Check</button>
-            </div>
-            
-            <div id="message"></div>
+<div id="taskList">
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 0</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 1</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 2</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 3</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 4</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 5</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 6</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 7</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 8</div>
+    <button class="task-toggle">−</button>
+  </div>
+  <div class="task">
+    <div class="task-content" contenteditable="true">Task 9</div>
+    <button class="task-toggle">−</button>
+  </div>
+</div>
 
-            <div class="stats">
-                Solved: <span id="solved-count">0</span>/20
-            </div>
-            
-            <div id="timer">Time: 0:00</div>
-			            <div id="start-container">
-                <button id="start-button" onclick="startGame()">Start Game</button>
-            </div>
-        </div>
+<div id="calendar"></div>
 
-        <div class="progress-grid" id="progress"></div>
-    </div>
+<script src="https://cdn.jsdelivr.net/npm/interactjs/dist/interact.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@5.11.3/main.min.js"></script>
 
 <script>
-        let numbers = [];
-        let solved = new Set();
-        let startTime;
-        let timerInterval;
-        let gameActive = false;
-
-        function startGame() {
-            gameActive = true;
-            document.getElementById('start-button').style.display = 'none';
-            document.getElementById('equation').disabled = false;
-            document.getElementById('check-button').disabled = false;
-            
-            // Reset game state
-            numbers = [];
-            solved = new Set();
-            document.getElementById('solved-count').textContent = '0';
-            
-            // Generate new numbers
-            generateNumbers();
-            
-            // Start timer
-            startTime = new Date();
-            timerInterval = setInterval(updateTimer, 1000);
-            
-            // Clear any existing messages
-            showMessage('', '');
-        }
-
-        function updateTimer() {
-            if (!gameActive) return;
-            
-            const now = new Date();
-            const timeDiff = Math.floor((now - startTime) / 1000); // seconds
-            const minutes = Math.floor(timeDiff / 60);
-            const seconds = timeDiff % 60;
-            
-            document.getElementById('timer').textContent = 
-                `Time: ${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        function generateNumbers() {
-            const availableNumbers = Array.from({length: 9}, (_, i) => i + 1);
-
-            for (let i = availableNumbers.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [availableNumbers[i], availableNumbers[j]] = [availableNumbers[j], availableNumbers[i]];
-            }
-            
-            numbers = availableNumbers.slice(0, 4).sort((a, b) => a - b); 
-            updateDisplay();
-        }
-
-        function factorial(n) {
-            if (n < 0) return null;
-            if (n <= 1) return 1;
-            let result = 1;
-            for (let i = 2; i <= n; i++) {
-                result *= i;
-            }
-            return result;
-        }
-
-        function evaluateExpression(expr) {
-            const factorialMatches = expr.match(/(\d+)!/g) || [];
-            const factorialNums = factorialMatches.map(match => parseInt(match.replace('!', '')));
-
-            const factorialExpr = expr.replace(/(\d+)!/g, (match, num) => {
-                const fact = factorial(parseInt(num));
-                return fact !== null ? fact.toString() : match;
-            });
-
-            const finalExpr = factorialExpr.replace(/\^/g, '**');
-
-            try {
-                const numberMatches = expr.match(/\d+/g);
-                if (!numberMatches) return null;
-                
-                const extractedNums = [...new Set(numberMatches.map(Number))];
-                const originalNumSet = new Set(numbers);
-                
-                if (extractedNums.length !== numbers.length) return null;
-                
-                const isValid = extractedNums.every(num => originalNumSet.has(num));
-                
-                if (!isValid) return null;
-
-                const result = Math.round(eval(finalExpr) * 1000) / 1000;
-                return result;
-            } catch (e) {
-                return null;
-            }
-        }
-
-        function checkEquation() {
-            if (!gameActive) return;
-            
-            const equation = document.getElementById('equation').value;
-            const result = evaluateExpression(equation);
-            
-            if (result === null) {
-                showMessage('Invalid equation or not using all numbers exactly once', 'error');
-                return;
-            }
-
-            const wholeResult = Math.round(result);
-            if (wholeResult !== result || wholeResult < 1 || wholeResult > 20) {
-                showMessage(`Equation equals ${result}, which isn't a whole number between 1 and 20`, 'error');
-                return;
-            }
-
-            if (solved.has(wholeResult)) {
-                showMessage(`You've already solved for ${wholeResult}! Try a different number.`, 'error');
-                return;
-            }
-
-            solved.add(wholeResult);
-            document.getElementById('equation').value = '';
-            showMessage(`Great! Your equation equals ${wholeResult}`, 'success');
-            updateDisplay();
-            document.getElementById('solved-count').textContent = solved.size;
-            
-            if (solved.size === 20) {
-                const finalTime = document.getElementById('timer').textContent;
-                showMessage(`Congratulations! You solved all numbers! Final time: ${finalTime}`, 'success');
-                endGame();
-            }
-        }
-
-        function endGame() {
-            gameActive = false;
-            clearInterval(timerInterval);
-            document.getElementById('equation').disabled = true;
-            document.getElementById('check-button').disabled = true;
-            document.getElementById('start-button').style.display = 'block';
-            document.getElementById('start-button').textContent = 'Play Again';
-        }
-
-        function showMessage(text, type) {
-            const messageDiv = document.getElementById('message');
-            messageDiv.textContent = text;
-            messageDiv.className = 'message ' + type;
-        }
-
-    function updateDisplay() {
-        const numbersContainer = document.getElementById('numbers');
-        numbersContainer.innerHTML = Array(4).fill(`<div class="number-box">${gameActive ? numbers[0] : ''}</div>`).map((box, i) => 
-            gameActive ? `<div class="number-box">${numbers[i]}</div>` : box
-        ).join('');
-
-        // Update progress grid
-        const progressContainer = document.getElementById('progress');
-        progressContainer.innerHTML = Array.from({length: 20}, (_, i) => {
-            const number = i + 1;
-            return `<div class="number-cell ${solved.has(number) ? 'solved' : ''}">${number}</div>`;
-        }).join('');
+  const tasks = document.querySelectorAll('.task');
+  tasks.forEach(task => {
+    const taskContent = task.querySelector('.task-content');
+    const toggleButton = task.querySelector('.task-toggle');
+    
+    // Add event listener to the editable content area
+    taskContent.addEventListener('input', saveTasksAndPositions);
+    
+    // Add click event to the toggle button
+    toggleButton.addEventListener('click', function(e) {
+      e.stopPropagation();
+      task.classList.toggle('minimized');
+      this.textContent = task.classList.contains('minimized') ? '+' : '−';
+      saveTasksAndPositions();
+    });
+  });
+  
+  function saveTasksAndPositions() {
+    const savedData = Array.from(tasks).map(task => {
+      const taskContent = task.querySelector('.task-content');
+      return {
+        text: taskContent.innerText,
+        x: task.dataset.x || '0',
+        y: task.dataset.y || '0',
+        minimized: task.classList.contains('minimized')
+      };
+    });
+    localStorage.setItem('taskData', JSON.stringify(savedData));
+  }
+  
+  window.addEventListener('load', function() {
+    // Initialize default positions if none are saved
+    let savedData = JSON.parse(localStorage.getItem('taskData'));
+    
+    if (!savedData || savedData.length === 0) {
+      // Set initial positions in a grid layout
+      savedData = Array.from(tasks).map((task, index) => {
+        const col = index % 5;
+        const row = Math.floor(index / 5);
+        const x = col * 320;
+        const y = row * 100;
+        
+        // Position the task at grid coordinates
+        task.style.transform = `translate(${x}px, ${y}px)`;
+        task.dataset.x = x;
+        task.dataset.y = y;
+        
+        const taskContent = task.querySelector('.task-content');
+        
+        return {
+          text: taskContent.innerText,
+          x: x,
+          y: y,
+          minimized: false
+        };
+      });
+      
+      localStorage.setItem('taskData', JSON.stringify(savedData));
     }
+    
+    loadTasksAndPositions();
+  });
+  
+  function loadTasksAndPositions() {
+    const savedData = JSON.parse(localStorage.getItem('taskData'));
+    if (savedData && savedData.length > 0){
+      tasks.forEach((task, index) => {
+        const { text, x, y, minimized } = savedData[index];
+        
+        // Set the text content in the editable div
+        const taskContent = task.querySelector('.task-content');
+        taskContent.innerText = text;
+        
+        // Set position
+        task.style.transform = `translate(${x}px, ${y}px)`;
+        task.dataset.x = x;
+        task.dataset.y = y;
+        
+        // Set minimized state if applicable
+        const button = task.querySelector('.task-toggle');
+        if (minimized) {
+          task.classList.add('minimized');
+          button.textContent = '+';
+        } else {
+          task.classList.remove('minimized');
+          button.textContent = '−';
+        }
+      });
+    }
+  }
 
-    // Initialize empty display (removed generateNumbers call)
-    updateDisplay();
+  interact('.task')
+    .draggable({
+      inertia: true,
+      modifiers: [
+        interact.modifiers.restrictRect({
+          restriction: 'parent',
+          endOnly: true
+        })
+      ],
+      autoScroll: true,
+      listeners: {
+        start(event) {
+          // Only prevent dragging if the click was directly on the toggle button
+          if (event.originalEvent && event.originalEvent.target && 
+              event.originalEvent.target.classList.contains('task-toggle')) {
+            event.interaction.stop();
+            return;
+          }
+          event.target.classList.add('dragging');
+          event.interactable.draggable(false);
+        },
+        move(event) {
+          const { dx, dy } = event;
+          const { x, y } = event.target.dataset;
+          const newX = (parseFloat(x) || 0) + dx;
+          const newY = (parseFloat(y) || 0) + dy;
+          event.target.style.transform = `translate(${newX}px, ${newY}px)`;
+          event.target.dataset.x = newX;
+          event.target.dataset.y = newY;
+        },
+        end(event) {
+          event.target.classList.remove('dragging');
+          event.interactable.draggable(true);
+          const { x, y } = event.target.dataset;
+          event.target.style.transform = `translate(${x}px, ${y}px)`;
+          saveTasksAndPositions();
+        }
+      }
+    });
 
-        // Initialize empty progress grid
-        generateNumbers();
-
-        document.getElementById('equation').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') {
-                checkEquation();
-            }
+  document.addEventListener('DOMContentLoaded', function() {
+    const calendarEl = document.getElementById('calendar');
+    
+    const calendar = new FullCalendar.Calendar(calendarEl, {
+      headerToolbar: false,
+      initialView: 'customSevenDay',
+	views: {
+	  customSevenDay: {
+		type: 'timeGrid',
+		duration: { days: 7 },
+		buttonText: '7 day'
+	  }
+	},
+      dayHeaderFormat: { weekday: 'short', month: 'numeric', day: 'numeric' },
+      initialDate: new Date(),
+      slotMinTime: '08:00:00',
+      slotMaxTime: '18:00:00',
+      allDaySlot: false,
+      slotDuration: '00:30:00',
+      height: '509px',
+      nowIndicator: true,
+      businessHours: {
+        daysOfWeek: [1, 2, 3, 4, 5],
+        startTime: '08:00',
+        endTime: '18:00',
+      },
+      editable: true,
+      selectable: true,
+      eventColor: '#3788d8',
+      eventTimeFormat: {
+        hour: '2-digit',
+        minute: '2-digit',
+        meridiem: false,
+        hour12: false
+      },
+      
+      select: function(info) {
+        const title = prompt('Enter event title:');
+        if (title) {
+          calendar.addEvent({
+            title: title,
+            start: info.start,
+            end: info.end,
+            allDay: info.allDay
+          });
+          
+          saveEvents(calendar);
+        }
+        calendar.unselect();
+      },
+      
+      eventClick: function(info) {
+        if (confirm('Would you like to delete this event?')) {
+          info.event.remove();
+          
+          saveEvents(calendar);
+        }
+      },
+      
+      eventDrop: function() {
+        saveEvents(calendar);
+      },
+      
+      eventResize: function() {
+        saveEvents(calendar);
+      }
+    });
+    
+    function saveEvents(calendar) {
+      const events = calendar.getEvents().map(event => ({
+        title: event.title,
+        start: event.start ? event.start.toISOString() : null,
+        end: event.end ? event.end.toISOString() : null
+      }));
+      localStorage.setItem('calendarEvents', JSON.stringify(events));
+    }
+    
+    function loadEvents() {
+      const eventsJson = localStorage.getItem('calendarEvents');
+      if (eventsJson) {
+        const events = JSON.parse(eventsJson);
+        events.forEach(eventData => {
+          calendar.addEvent(eventData);
         });
+      }
+    }
+    
+    calendar.render();
+    loadEvents();
+    
+    setTimeout(function() {
+      const weekendCols = document.querySelectorAll('.fc-day-sat, .fc-day-sun');
+      weekendCols.forEach(col => {
+        col.style.maxWidth = '15px';
+        col.style.width = '15px';
+        col.style.backgroundColor = '#f0f0f0';
+      });
+      
+      const observer = new MutationObserver(function(mutations) {
+        const weekendCols = document.querySelectorAll('.fc-day-sat, .fc-day-sun');
+        weekendCols.forEach(col => {
+          col.style.maxWidth = '15px';
+          col.style.width = '15px';
+          col.style.backgroundColor = '#f0f0f0';
+        });
+      });
+      
+      observer.observe(calendarEl, { childList: true, subtree: true });
+    }, 500);
+  });
 </script>
 </body>
 </html>
